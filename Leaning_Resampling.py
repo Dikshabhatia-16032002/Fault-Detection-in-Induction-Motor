@@ -9,9 +9,9 @@ import seaborn as sns
 
 NORMAL_FILEPATH = 'D:/bnftech/dataset/normal/13.1072.csv'
 #FAULT_FILEPATHS = ["D:/bnftech/dataset/horizontal-misalignment/2.0mm/13.5168.csv","D:/bnftech/dataset/vertical-misalignment/1.90mm/12.0832.csv","D:/bnftech/dataset/imbalance/35g/12.0832.csv","D:/bnftech/dataset/underhang/ball_fault/35g/13.7216.csv","D:/bnftech/dataset/overhang/ball_fault/35g/12.288.csv"]
-FAULT_FILEPATHS = ["D:/bnftech/dataset/overhang/ball_fault/35g/17.6128.csv"]
-#titles=["horizontal Misalignment 2.0 mm","vertical Misalignment","imbalance 35g","underhang ball 35g","overhang ball 35g"]
-titles=["overhang ball 35g 17.6128 file"]
+FAULT_FILEPATHS = ["D:/bnftech/dataset/imbalance/35g/12.0832.csv","D:/bnftech/dataset/underhang/ball_fault/35g/13.7216.csv"]
+#titles=["horizontal Misalignment 2.0 mm 13.5168","vertical Misalignment 1.90 mm 12.0832","imbalance 35g 12.0832","underhang ball 35g 13.7216","overhang ball 35g 12.288"]
+titles=["imbalance 35g 12.0832","underhang ball 35g 13.7216"]
 DATA_COLUMNS = ["Tacho","Acc_U_Axial","Acc_U_Radial","Acc_U_Tangential","Acc_O_Axial","Acc_O_Radial","Acc_O_Tangential","MIC"]
 N_BINS = 40
 
@@ -105,6 +105,88 @@ def downsampling(df_normal_csv,df_fault_csv,titles,DATA_COLUMNS,N_BINS):
             #plt.show()
             i=i+1
         z=z+1
+
+def downsamplingFFT(df_normal_csv,df_fault_csv,titles,DATA_COLUMNS,N_BINS):
+    z=0
+    for x in df_fault_csv:
+        i=0
+        for i in range(0,8):
+            d = torch.from_numpy(np.array(df_normal_csv.loc[:,DATA_COLUMNS[i]]))
+            #data=
+            fd = torch.from_numpy(np.array(x.loc[:,DATA_COLUMNS[i]]))
+            #fault_data=
+            #region Resampling the series
+            figure,ax = plt.subplots(nrows=2,ncols=2,figsize=(10, 10))
+            plt.subplots_adjust(right=0.9)
+
+            fftn,freqn,fftMagn=fftCalculation(d)
+            ax[0,0].stem(freqn, fftMagn)
+            ax[0,0].set_title(f"• Normal • Original Signal : Sampling Rate: {SAMPLING_RATE}")
+            ax[0,0].set_xlim(0,25000)
+            ax[0,0].set_xlabel("frequency")
+            ax[0,0].set_ylabel("FFT Magnitude")
+
+            downsampled_data = ResamplingData(d,SAMPLING_RATE,RESAMPLING_RATE)
+            fftn,freqnd,fftMagnd=fftCalculation(downsampled_data)
+            ax[1,0].stem(freqnd, fftMagnd)
+            ax[1,0].set_title(f"• Normal • Downsampled Signal : Sampling Rate: {RESAMPLING_RATE}")
+            ax[1,0].set_xlim(0,25000)
+            ax[1,0].set_xlabel("frequency")
+            ax[1,0].set_ylabel("FFT Magnitude")
+
+            fftf,freqf,fftMagf=fftCalculation(fd)
+            ax[0,1].stem(freqf, fftMagf)
+            ax[0,1].set_title(f"• Fault • Original Signal : Sampling Rate: {SAMPLING_RATE}")
+            ax[0,1].set_xlim(0,25000)
+            ax[0,1].set_xlabel("frequency")
+            ax[0,1].set_ylabel("FFT Magnitude")
+
+            downsampled_data = ResamplingData(fd,SAMPLING_RATE,RESAMPLING_RATE)
+            fftn,freqfd,fftMagfd=fftCalculation(downsampled_data)
+            ax[1,1].stem(freqfd, fftMagfd)
+            ax[1,1].set_title(f"• Fault • Downsampled Signal : Sampling Rate: {RESAMPLING_RATE}")
+            ax[1,1].set_xlim(0,25000)
+            ax[1,1].set_xlabel("frequency")
+            ax[1,1].set_ylabel("FFT Magnitude")
+
+            '''
+            ax[row,col].stem(freqf, fftMagf)
+            ax[row,col].set_title(f"{DATA_COLUMNS[i]}")
+            ax[row,col].set_xlim(0,25000)
+            ax[row,col].set_xlabel("frequency")
+            ax[row,col].set_ylabel("FFT Magnitude")
+            '''
+            # the histogram of the Normal data
+            #n0, bins0, patches0 = ax[0,0].hist(data, N_BINS)
+            '''
+            sns.histplot(fftMagn, kde=True, color='green', alpha=0.7,ax=ax[0,0],bins=N_BINS)
+            ax[0,0].set_title(f"• Normal • Original Signal : Sampling Rate: {SAMPLING_RATE}")
+            # the histogram of the Downsampled data
+            downsampled_data = ResamplingData(d,SAMPLING_RATE,RESAMPLING_RATE)
+            fftn,freqn,fftMagnd=fftCalculation(d)
+            #n1, bins1, patches1 = ax[1,0].hist(downsampled_data, N_BINS)
+            sns.histplot(fftMagnd, kde=True, color='green', alpha=0.7,ax=ax[1,0],bins=N_BINS)
+            ax[1,0].set_title(f"• Normal • Downsampled Signal : Sampling Rate: {RESAMPLING_RATE}")
+            
+            # the histogram of the fault data
+            #n2, bins2, patches2 = ax[0,1].hist(fault_data, N_BINS)
+            ax[0,1].set_title(f"• Fault • Original Signal : Sampling Rate: {SAMPLING_RATE}")
+            sns.histplot(fftMagf, kde=True, color='green', alpha=0.7,ax=ax[0,1],bins=N_BINS)
+            # the histogram of the Downsampled data
+            downsampled_fault_data = ResamplingData(fd,SAMPLING_RATE,RESAMPLING_RATE)
+            fftn,freqn,fftMagfd=fftCalculation(d)
+            #n3, bins3, patches3 = ax[1,1].hist(downsampled_fault_data, N_BINS)
+            ax[1,1].set_title(f"• Fault • Downsampled Signal : Sampling Rate: {RESAMPLING_RATE}")
+            sns.histplot(fftMagfd, kde=True, color='green', alpha=0.7,ax=ax[1,1],bins=N_BINS)
+            '''
+            plt.suptitle(f"• {titles[z]} {DATA_COLUMNS[i]}")
+            figure.tight_layout()
+            savepath="D:/bnftech/Fault detection in induction motor/resampling/FFT"
+            plt.savefig(f'{savepath}/• {titles[z]} for {DATA_COLUMNS[i]}.png')
+            figure.clear()
+            #plt.show()
+            i=i+1
+        z=z+1
     
 
 def histogramPlt(df_normal_csv,df_fault_csv,titles,DATA_COLUMNS,N_BINS):
@@ -125,7 +207,9 @@ def histogramPlt(df_normal_csv,df_fault_csv,titles,DATA_COLUMNS,N_BINS):
             j=j+1
         plt.legend()
         figure.suptitle(f"• normal vs {titles[z]} ")
-        plt.savefig(f"D:\bnftech\Fault detection in induction motor\histogram\• normal vs {titles[z]}.png")
+        #plt.savefig(f"D:\bnftech\Fault detection in induction motor\histogram\• normal vs {titles[z]}.png")
+        savepath="D:/bnftech/Fault detection in induction motor/fft"
+        plt.savefig(f'{savepath}/• normal vs {titles[z]}.png')
         plt.show()
         z=z+1
         
@@ -166,5 +250,6 @@ def fftGraph(df_normal_csv,df_fault_csv,titles,DATA_COLUMNS):
 
 df_normal_csv,df_fault_csv=csv_files(NORMAL_FILEPATH,FAULT_FILEPATHS,DATA_COLUMNS)
 #histogramPlt(df_normal_csv,df_fault_csv,titles,DATA_COLUMNS,N_BINS)
-downsampling(df_normal_csv,df_fault_csv,titles,DATA_COLUMNS,N_BINS)
-fftGraph(df_normal_csv,df_fault_csv,titles,DATA_COLUMNS)
+#downsampling(df_normal_csv,df_fault_csv,titles,DATA_COLUMNS,N_BINS)
+downsamplingFFT(df_normal_csv,df_fault_csv,titles,DATA_COLUMNS,N_BINS)
+#fftGraph(df_normal_csv,df_fault_csv,titles,DATA_COLUMNS)
