@@ -1,0 +1,11 @@
+pandas
+pyarrow
+matplotlib
+numpy
+seaborn
+ipython
+os
+torchaudio
+torch
+scipy
+
